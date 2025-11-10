@@ -1,7 +1,7 @@
 import os, requests, yfinance as yf, pandas as pd, numpy as np
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-CHAT_ID   = os.getenv("CHAT_ID")
+BOT_TOKEN = os.getenv("8224175137:AAGSEigqVKaWhWhF3djMdKNs7om7NPmSkQM")
+CHAT_ID   = os.getenv("1596671103")
 WATCH     = os.getenv("WATCH_LIST","RELIANCE.NS,HDFCBANK.NS,INFY.NS,ICICIBANK.NS,TCS.NS").split(",")
 
 VOL_MULT=1.5; RSI_BUY=60; RSI_SELL=45; PERIOD="2y"
