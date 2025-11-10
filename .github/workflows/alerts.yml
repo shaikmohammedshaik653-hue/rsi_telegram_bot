@@ -16,7 +16,7 @@ jobs:
           python-version: "3.12"
       - run: pip install -r requirements.txt
       - env:
-          BOT_TOKEN: ${{"8224175137:AAGSEigqVKaWhWhF3djMdKNs7om7NPmSkQM"}}
+          BOT_TOKEN: ${{ "8224175137:AAGSEigqVKaWhWhF3djMdKNs7om7NPmSkQM" }}
           CHAT_ID: ${{"1596671103"}}
           WATCH_LIST: ${{ reliance ns hdfcbank ntpc ongc icicibank }}
-        run: python rsi_alert.py
+        run:{ python rsi_alert.py }
