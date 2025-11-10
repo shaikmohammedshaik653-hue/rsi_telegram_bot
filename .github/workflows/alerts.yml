@@ -26,5 +26,5 @@ jobs:
         BOT_TOKEN: "${{ secrets. 8224175137:AAGSEigqVKaWhWhF3djMdKNs7om7NPmSkQM}}"
         CHAT_ID: "${{ secrets.1596671103}}"
         WATCH_LIST: "${{ secrets.WATCH_LIST }}"
-      run:"{{ python rsi_alert.py }}"
+      run:"python rsi_alert.py"
       
