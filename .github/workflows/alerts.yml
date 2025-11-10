@@ -1,0 +1,22 @@
+name: Daily RSI Alerts
+
+on:
+  schedule:
+    # 9:20 AM IST ≈ 03:50 UTC, Mon–Fri
+    - cron: "50 3 * * 1-5"
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - env:
+          BOT_TOKEN: ${{ 8224175137:AAGSEigqVKaWhWhF3djMdKNs7om7NPmSkQM }}
+          CHAT_ID: ${{ 1596671103 }}
+          WATCH_LIST: ${{ reliance ns hdfcbank ntpc ongc icicibank }}
+        run: python rsi_alert.py
