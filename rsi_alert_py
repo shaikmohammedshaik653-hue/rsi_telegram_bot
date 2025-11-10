@@ -1,0 +1,54 @@
+import os, requests, yfinance as yf, pandas as pd, numpy as np
+
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID   = os.getenv("CHAT_ID")
+WATCH     = os.getenv("WATCH_LIST","RELIANCE.NS,HDFCBANK.NS,INFY.NS,ICICIBANK.NS,TCS.NS").split(",")
+
+VOL_MULT=1.5; RSI_BUY=60; RSI_SELL=45; PERIOD="2y"
+
+def send(msg):
+    if not BOT_TOKEN or not CHAT_ID: return
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    try: requests.post(url, data={"chat_id": CHAT_ID, "text": msg[:4000]})
+    except Exception as e: print("Telegram error:", e)
+
+def ema(x,n): return x.ewm(span=n, adjust=False).mean()
+def rsi(x, n=14):
+    d=x.diff(); up=d.clip(lower=0).ewm(alpha=1/n, adjust=False).mean()
+    dn=(-d.clip(upper=0)).ewm(alpha=1/n, adjust=False).mean()
+    rs=up/dn.replace(0, np.nan); return 100 - (100/(1+rs))
+
+def scan():
+    buys=sells=0
+    for t in WATCH:
+        try:
+            df = yf.download(t, period=PERIOD, interval="1d", auto_adjust=False, progress=False)
+            if df.empty: continue
+            if "Close" not in df.columns:
+                if "Adj Close" in df.columns: df["Close"]=df["Adj Close"]
+                else: continue
+            if "Volume" not in df.columns: df["Volume"]=0
+
+            df = df.dropna(subset=["Close"]).copy()
+            df["EMA20"]=ema(df["Close"],20); df["EMA50"]=ema(df["Close"],50)
+            df["RSI"]=rsi(df["Close"],14);   df["VMA20"]=df["Volume"].rolling(20).mean()
+            df = df.dropna(subset=["EMA20","EMA50","RSI","VMA20"])
+            last=df.iloc[-1]
+
+            buy  = (last["Close"]>last["EMA20"]>last["EMA50"]) and (last["RSI"]>=RSI_BUY) and (last["Volume"]>=VOL_MULT*last["VMA20"])
+            sell = (last["Close"]<last["EMA20"]<last["EMA50"]) and (last["RSI"]<=RSI_SELL)
+
+            if buy:
+                buys+=1
+                send(f"🔔🔵 BUY {t} @ {last['Close']:.2f}\nEMA20={last['EMA20']:.2f}, EMA50={last['EMA50']:.2f}, RSI={last['RSI']:.1f}")
+            if sell:
+                sells+=1
+                send(f"🔔🔴 SELL {t} @ {last['Close']:.2f}\nEMA20={last['EMA20']:.2f}, EMA50={last['EMA50']:.2f}, RSI={last['RSI']:.1f}")
+        except Exception as e:
+            print(t, e)
+
+    if buys==0 and sells==0:
+        send("ℹ️ No signals today (advanced strategy).")
+
+if __name__ == "__main__":
+    scan()
