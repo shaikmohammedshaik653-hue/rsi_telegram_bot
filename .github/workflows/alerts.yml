@@ -23,7 +23,7 @@ jobs:
 
       - name: Run RSI Alert Script
         env:
-          BOT_TOKEN: "${{ secrets.BOT_TOKEN }}"
-          CHAT_ID: "${{ secrets.CHAT_ID }}"
-          WATCH_LIST: "${{ secrets.WATCH_LIST }}"
+          BOT_TOKEN: "${{ 8224175137:AAGSEigqVKaWhWhF3djMdKNs7om7NPmSkQM }}"
+          CHAT_ID: "${{ 1596671103 }}"
+          WATCH_LIST: "${{ RELIANCE.NS.HDFC.NS.ICICI.NS }}"
         run: python rsi_alert.py
