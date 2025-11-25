@@ -8,11 +8,11 @@ BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 CHAT_ID   = os.getenv("CHAT_ID", "")
 WATCH_LIST = os.getenv("WATCH_LIST", "RELIANCE.NS,HDFCBANK.NS").split(",")
 
-RSI_THR = 70
+RSI_THR = 0
 PERIOD = "2y"
 INTERVAL = "1d"
 
-def send_telegram(msg: str):
+def send_telegram(  send_telegram("TEST: GitHub Actions is sending messages successfully!")
     if not BOT_TOKEN or not CHAT_ID:
         print("⚠️ Telegram creds missing.")
         return
