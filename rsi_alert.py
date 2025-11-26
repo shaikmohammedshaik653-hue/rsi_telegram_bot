@@ -58,5 +58,13 @@ def scan_and_alert():
         print(r)
 
 if __name__ == "__main__":
-    scan_and_alert()
-send_telegram("TEST OK: Bot connected successfully from GitHub Actions!")
+    scan_and_alert(if __name__ == "__main__":
+    # Temp test message to verify GitHub Actions -> Telegram works.
+    # Remove this after you confirm messages are arriving.
+    try:
+        send_telegram("TEST OK: GitHub Actions is sending messages successfully!")
+    except Exception as e:
+        print("Test send failed:", e)
+
+    # Then run the normal scan
+    scan_and_alert())
