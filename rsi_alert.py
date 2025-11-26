@@ -59,3 +59,4 @@ def scan_and_alert():
 
 if __name__ == "__main__":
     scan_and_alert()
+send_telegram("TEST OK: Bot connected successfully from GitHub Actions!")
