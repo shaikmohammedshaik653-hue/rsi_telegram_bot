@@ -101,7 +101,7 @@ if __name__ == "__main__":
     # TEMP TEST: send one test message from GitHub Actions to verify connection.
     # AFTER you confirm test message received, remove or comment out the next line.
     try:
-        send_telegram("TEST OK: GitHub Actions is sending messages successfully!")
+
     except Exception as e:
         print("Test send failed:", e)
 
