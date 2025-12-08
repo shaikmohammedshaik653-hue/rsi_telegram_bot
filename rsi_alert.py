@@ -10,23 +10,25 @@ RSI_THR = 70
 PERIOD = "2y"
 INTERVAL = "1d"
 
-
 def send_telegram(msg: str):
     if not BOT_TOKEN or not CHAT_ID:
         print("⚠️ Telegram creds missing.")
         return
+
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+
     try:
         requests.post(url, data={"chat_id": CHAT_ID, "text": msg[:4000]})
     except Exception as e:
         print("Telegram error:", e)
-      def rsi(series: pd.Series, n=14):
+
+
+def rsi(series: pd.Series, n=14):
     d = series.diff()
     up = d.clip(lower=0).ewm(alpha=1/n, adjust=False).mean()
     dn = (-d.clip(upper=0)).ewm(alpha=1/n, adjust=False).mean()
     rs = up / dn.replace(0, np.nan)
     return 100 - (100 / (1 + rs))
-
 
 def scan_and_alert():
     results = []
