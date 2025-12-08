@@ -81,14 +81,5 @@ def scan_and_alert():
         print(r)
       # --- Main execution block ---
 if __name__ == "__main__":
-
-    # TEMP TEST (optional):
-    # Pehle ek test message bhej kar confirm kar lo
-    try:
-        send_telegram("TEST OK: GitHub Actions is able to send Telegram messages!")
-        print("Test message sent successfully.")
-    except Exception as e:
-        print("Test send failed:", e)
-
     # Now run main RSI scanner
     scan_and_alert()
