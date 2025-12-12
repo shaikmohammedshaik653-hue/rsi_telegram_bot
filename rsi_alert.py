@@ -1,5 +1,6 @@
 # rsi_alert.py
-# Daily RSI + Volume scanner with Telegram alerts
+# Simple RSI + Volume scanner -> Telegram notifier
+# Put this file in your repo, set BOT_TOKEN, CHAT_ID, WATCH_LIST as GitHub secrets.
 
 import os
 import requests
@@ -8,171 +9,171 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timezone
 
-# ------------------- Config from GitHub Secrets -------------------
-
+# --- Config (tweak) ---
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
-CHAT_ID   = os.getenv("CHAT_ID", "")
-
-# Comma separated list in GitHub secret WATCH_LIST
-# Example: "RELIANCE.NS,HDFCBANK.NS,TCS.NS"
-WATCH_LIST = os.getenv(
-    "WATCH_LIST",
-    "RELIANCE.NS,HDFCBANK.NS"
-).split(",")
-
-# RSI & Volume settings
-RSI_OVERSOLD   = 30        # BUY zone
-RSI_OVERBOUGHT = 70        # SELL zone
-VOL_LOOKBACK   = 20        # days for avg volume
-VOL_MULTIPLIER = 1.5       # spike if vol > 1.5 * avg
-
-PERIOD   = "2y"
+CHAT_ID = os.getenv("CHAT_ID", "")
+WATCH_LIST = os.getenv("WATCH_LIST", "RELIANCE.NS,ICICIBANK.NS").split(",")
+RSI_PERIOD = 14
+VOL_LOOKBACK = 20
+VOL_MULTIPLIER = 2.0
+RSI_OVERSOLD = 30
+RSI_OVERBOUGHT = 70
+PERIOD = "2y"
 INTERVAL = "1d"
 
-# ------------------- Helpers -------------------
+# --- Helpers ---
 def send_telegram(msg: str):
-    """Send message to Telegram chat."""
     if not BOT_TOKEN or not CHAT_ID:
         print("⚠️ Telegram creds missing.")
         return
-
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     try:
         requests.post(url, data={"chat_id": CHAT_ID, "text": msg[:4000]})
     except Exception as e:
         print("Telegram error:", e)
 
-
-def rsi(series: pd.Series, n: int = 14) -> pd.Series:
-    """Standard RSI calculation."""
+def rsi(series: pd.Series, n=RSI_PERIOD):
     d = series.diff()
-    up = d.clip(lower=0).ewm(alpha=1 / n, adjust=False).mean()
-    dn = (-d.clip(upper=0)).ewm(alpha=1 / n, adjust=False).mean()
+    up = d.clip(lower=0).ewm(alpha=1/n, adjust=False).mean()
+    dn = (-d.clip(upper=0)).ewm(alpha=1/n, adjust=False).mean()
     rs = up / dn.replace(0, np.nan)
     return 100 - (100 / (1 + rs))
 
+def safe_date_str(index_label):
+    # index_label often is Timestamp; else return str
+    try:
+        return getattr(index_label, "date", lambda: index_label)()
+    except Exception:
+        return str(index_label)
 
-# ------------------- Main Scanner -------------------
-
+# --- Main scan ---
 def scan_and_alert():
     results = []
-
     for sym in WATCH_LIST:
         sym = sym.strip()
         if not sym:
             continue
-
-        print("\n-----------------------------")
         print("🔎 Scanning:", sym)
-
-        # ---- Download data safely ----
         try:
-            df = yf.download(
-                sym,
-                period=PERIOD,
-                interval=INTERVAL,
-                auto_adjust=True,
-                progress=False,
-            )
+            df = yf.download(sym, period=PERIOD, interval=INTERVAL, auto_adjust=True, progress=False)
         except Exception as e:
-            print("yfinance download error for", sym, "->", e)
+            print("yfinance download error for", sym, e)
             continue
 
         if df is None or df.empty:
             print("No data for", sym)
             continue
 
-        if "Close" not in df.columns:
-            print("No Close column for", sym)
+        # Ensure required columns exist
+        if "Close" not in df.columns or "Volume" not in df.columns:
+            print("Missing required columns for", sym, "cols:", df.columns.tolist())
             continue
 
-        if "Volume" not in df.columns:
-            print("No Volume column for", sym)
-            continue
-
-        # ---- Indicators ----
-        close = df["Close"]
-        df["RSI"] = rsi(close)
+        # Compute RSI and volume average
+        df["RSI"] = rsi(df["Close"])
         df["vol_avg"] = df["Volume"].rolling(VOL_LOOKBACK).mean()
 
-        # Ensure we have at least one valid RSI
+        # Ensure at least one valid RSI
         valid_rsi = df["RSI"].dropna()
         if valid_rsi.empty:
             print("RSI all NaN for", sym)
             continue
 
-        last_idx = valid_rsi.index[-1]
+        last_label = valid_rsi.index[-1]
 
-        # Use .at to ensure scalar values (avoid Series / ambiguous comparisons)
-        last_rsi = float(df.at[last_idx, "RSI"])
-        last_close = float(df.at[last_idx, "Close"])
+        # Convert label -> integer position safely using get_indexer
+        pos_arr = df.index.get_indexer_for([last_label])
+        if pos_arr.size == 0 or pos_arr[0] < 0:
+            print("Could not get integer position for", sym, "label:", last_label)
+            continue
+        pos = int(pos_arr[0])
 
-        # Volume and vol_avg might be NaN; read as scalar and cast safely
-        last_vol_raw = df.at[last_idx, "Volume"]
-        vol_avg_raw = df.at[last_idx, "vol_avg"]
+        # Use iloc to get single row
+        row = df.iloc[pos]
 
-        # Convert to numeric (float) if possible
+        # Safe scalar conversions:
         try:
-            last_vol = float(last_vol_raw) if not pd.isna(last_vol_raw) else float("nan")
+            last_rsi = float(row["RSI"])
         except Exception:
-            last_vol = float("nan")
+            print("Invalid RSI scalar for", sym, "value:", row.get("RSI"))
+            continue
         try:
-            vol_avg = float(vol_avg_raw) if not pd.isna(vol_avg_raw) else float("nan")
+            last_close = float(row["Close"])
         except Exception:
-            vol_avg = float("nan")
-
-        # Check NaN scalars (no .any() here)
-        if pd.isna(last_vol) or pd.isna(vol_avg):
-            print("Volume/avg NaN for", sym, "last_vol:", last_vol_raw, "vol_avg:", vol_avg_raw)
+            print("Invalid Close scalar for", sym, "value:", row.get("Close"))
             continue
 
-        time_idx = last_idx
-        vol_spike = last_vol > (VOL_MULTIPLIER * vol_avg)
+        # Volume values (may be NaN)
+        last_vol = row.get("Volume", np.nan)
+        vol_avg = row.get("vol_avg", np.nan)
+        try:
+            last_vol_f = float(last_vol) if not pd.isna(last_vol) else np.nan
+        except Exception:
+            last_vol_f = np.nan
+        try:
+            vol_avg_f = float(vol_avg) if not pd.isna(vol_avg) else np.nan
+        except Exception:
+            vol_avg_f = np.nan
 
-        results.append(
-            (
-                sym,
-                time_idx,
-                float(last_close),
-                float(last_rsi),
-                int(last_vol),
-                int(vol_avg),
-            )
-        )
+        if pd.isna(last_vol_f) or pd.isna(vol_avg_f):
+            print("Volume/avg NaN for", sym, "vol:", last_vol, "vol_avg:", vol_avg)
+            continue
+
+        vol_spike = last_vol_f > (VOL_MULTIPLIER * vol_avg_f)
+
+        results.append((sym, last_label, last_close, last_rsi, int(last_vol_f), int(vol_avg_f)))
 
         print(f"Last RSI: {last_rsi:.1f}, Close: {last_close:.2f}")
-        print(f"Volume: {last_vol:.0f}, AvgVol({VOL_LOOKBACK}): {vol_avg:.0f}")
-        print("Volume spike?" , vol_spike)
+        print(f"Volume: {last_vol_f:.0f}, AvgVol({VOL_LOOKBACK}): {vol_avg_f:.0f}")
+        print("Volume spike?", vol_spike)
 
-        # ---- Signal Logic ----
+        # ---- Signal logic ----
         signal_msg = None
 
-        # BUY: Oversold + Volume spike
+        # BUY: oversold + volume spike
         if last_rsi <= RSI_OVERSOLD and vol_spike:
             signal_msg = (
                 "🟢 BUY SIGNAL\n"
                 f"Symbol: {sym}\n"
-                f"Date: {getattr(time_idx, 'date', lambda: time_idx)()}\n"
+                f"Date: {safe_date_str(last_label)}\n"
                 f"Close: {last_close:.2f}\n"
                 f"RSI: {last_rsi:.1f} (Oversold)\n"
-                f"Volume: {last_vol:.0f} (>{VOL_MULTIPLIER}x avg)\n\n"
+                f"Volume: {int(last_vol_f)} (>{VOL_MULTIPLIER}x avg)\n\n"
                 f"Buy Above: {last_close:.2f}\n"
                 f"Stoploss: {last_close * 0.98:.2f}\n"
-                f"Target 1: {last_close * 1.02:.2f}\n"
-                f"Target 2: {last_close * 1.03:.2f}"
+                f"Target1: {last_close * 1.02:.2f}\n"
+                f"Target2: {last_close * 1.03:.2f}"
+            )
+        # SELL: overbought + volume spike
+        elif last_rsi >= RSI_OVERBOUGHT and vol_spike:
+            signal_msg = (
+                "🔴 SELL SIGNAL\n"
+                f"Symbol: {sym}\n"
+                f"Date: {safe_date_str(last_label)}\n"
+                f"Close: {last_close:.2f}\n"
+                f"RSI: {last_rsi:.1f} (Overbought)\n"
+                f"Volume: {int(last_vol_f)} (>{VOL_MULTIPLIER}x avg)\n\n"
+                f"Sell Below: {last_close:.2f}\n"
+                f"Stoploss: {last_close * 1.02:.2f}\n"
+                f"Target1: {last_close * 0.98:.2f}\n"
+                f"Target2: {last_close * 0.97:.2f}"
             )
 
-            print("Prepared message:", signal_msg)
+        if signal_msg:
+            print("Prepared message:", signal_msg.replace("\n", " | "))
             send_telegram(signal_msg)
             print("Alert sent for", sym)
+        else:
+            print(f"No alert for {sym} (RSI={last_rsi:.1f}, spike={vol_spike})")
 
-    # ---- Summary ----
-    print("\n===== Scan done at", datetime.now(timezone.utc).astimezone().isoformat(), "=====")
+    # optional: print summary
+    print("Scan finished at", datetime.now(timezone.utc).isoformat())
     for r in results:
         print(r)
 
-
-# ------------------- Entry Point -------------------
-
 if __name__ == "__main__":
-    scan_and_alert()
+    try:
+        scan_and_alert()
+    except Exception as e:
+        print("Fatal error in main:", e)
+        # send_telegram(f"Script failed: {e}")  # optional
