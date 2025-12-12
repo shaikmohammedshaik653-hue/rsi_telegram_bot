@@ -28,8 +28,8 @@ VOL_MULTIPLIER = 1.5       # spike if vol > 1.5 * avg
 
 PERIOD   = "2y"
 INTERVAL = "1d"
-# ------------------- Helpers -------------------
 
+# ------------------- Helpers -------------------
 def send_telegram(msg: str):
     """Send message to Telegram chat."""
     if not BOT_TOKEN or not CHAT_ID:
