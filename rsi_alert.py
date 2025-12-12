@@ -28,8 +28,6 @@ VOL_MULTIPLIER = 1.5       # spike if vol > 1.5 * avg
 
 PERIOD   = "2y"
 INTERVAL = "1d"
-
-
 # ------------------- Helpers -------------------
 
 def send_telegram(msg: str):
