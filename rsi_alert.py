@@ -103,17 +103,31 @@ def scan_and_alert():
 
         last_idx = valid_rsi.index[-1]
 
-        last_rsi   = float(df.loc[last_idx, "RSI"])
-        last_close = float(df.loc[last_idx, "Close"])
-        last_vol   = df.loc[last_idx, "Volume"]
-        vol_avg    = df.loc[last_idx, "vol_avg"]
+        # Use .at to ensure scalar values (avoid Series / ambiguous comparisons)
+        last_rsi = float(df.at[last_idx, "RSI"])
+        last_close = float(df.at[last_idx, "Close"])
 
-        if pd.isna(last_vol).any() or pd.isna(vol_avg).any():
-            print("Volume/avg NaN for", sym)
+        # Volume and vol_avg might be NaN; read as scalar and cast safely
+        last_vol_raw = df.at[last_idx, "Volume"]
+        vol_avg_raw = df.at[last_idx, "vol_avg"]
+
+        # Convert to numeric (float) if possible
+        try:
+            last_vol = float(last_vol_raw) if not pd.isna(last_vol_raw) else float("nan")
+        except Exception:
+            last_vol = float("nan")
+        try:
+            vol_avg = float(vol_avg_raw) if not pd.isna(vol_avg_raw) else float("nan")
+        except Exception:
+            vol_avg = float("nan")
+
+        # Check NaN scalars (no .any() here)
+        if pd.isna(last_vol) or pd.isna(vol_avg):
+            print("Volume/avg NaN for", sym, "last_vol:", last_vol_raw, "vol_avg:", vol_avg_raw)
             continue
 
         time_idx = last_idx
-        vol_spike = last_vol > VOL_MULTIPLIER * vol_avg
+        vol_spike = last_vol > (VOL_MULTIPLIER * vol_avg)
 
         results.append(
             (
@@ -148,26 +162,9 @@ def scan_and_alert():
                 f"Target 2: {last_close * 1.03:.2f}"
             )
 
-        # SELL: Overbought + Volume spike
-        elif last_rsi >= RSI_OVERBOUGHT and vol_spike:
-            signal_msg = (
-                "🔴 SELL SIGNAL\n"
-                f"Symbol: {sym}\n"
-                f"Date: {getattr(time_idx, 'date', lambda: time_idx)()}\n"
-                f"Close: {last_close:.2f}\n"
-                f"RSI: {last_rsi:.1f} (Overbought)\n"
-                f"Volume: {last_vol:.0f} (>{VOL_MULTIPLIER}x avg)\n\n"
-                f"Sell Below: {last_close:.2f}\n"
-                f"Stoploss: {last_close * 1.02:.2f}\n"
-                f"Target 1: {last_close * 0.98:.2f}\n"
-                f"Target 2: {last_close * 0.97:.2f}"
-            )
-
-        if signal_msg:
-            print("✅ Signal generated for", sym)
+            print("Prepared message:", signal_msg)
             send_telegram(signal_msg)
-        else:
-            print("No trade signal for", sym)
+            print("Alert sent for", sym)
 
     # ---- Summary ----
     print("\n===== Scan done at", datetime.now(timezone.utc).astimezone().isoformat(), "=====")
