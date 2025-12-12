@@ -108,7 +108,7 @@ def scan_and_alert():
         last_vol   = df.loc[last_idx, "Volume"]
         vol_avg    = df.loc[last_idx, "vol_avg"]
 
-        if pd.isna(last_vol) or pd.isna(vol_avg):
+        if pd.isna(last_vol).any() or pd.isna(vol_avg).any():
             print("Volume/avg NaN for", sym)
             continue
 
