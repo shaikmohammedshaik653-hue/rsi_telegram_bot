@@ -186,8 +186,7 @@ if signal_msg:
             print("Prepared message:", signal_msg.replace("\n", " | "))
             send_telegram(signal_msg)
             print("Alert sent for", sym)
-        else:
-            print(f"No alert for {sym} (RSI={last_rsi:.1f}, spike={vol_spike})")
+else:print(f"No alert for {sym} (RSI={last_rsi:.1f}, spike={vol_spike})")
 
     # optional: print summary
     print("Scan finished at", datetime.now(timezone.utc).isoformat())
