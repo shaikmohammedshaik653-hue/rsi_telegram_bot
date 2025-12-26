@@ -178,22 +178,20 @@ elif last_rsi >= RSI_OVERBOUGHT and vol_spike:
         f"Target 1: {last_close * 0.98:.2f}\n"
         f"Target 2: {last_close * 0.97:.2f}"
     )
+    # SEND TELEGRAM
+    if signal_msg:
+        print("Prepared message:", signal_msg.replace("\n", " | "))
+        send_telegram(signal_msg)
+        print("Alert sent for", sym)
+    else:
+        print(f"No alert for {sym} (RSI={last_rsi:.1f}, spike={vol_spike})")
 
-# SEND TELEGRAM
-if signal_msg:
-    send_telegram(signal_msg)   
-if signal_msg:
-            print("Prepared message:", signal_msg.replace("\n", " | "))
-            send_telegram(signal_msg)
-            print("Alert sent for", sym)
-else:print(f"No alert for {sym} (RSI={last_rsi:.1f}, spike={vol_spike})"
-          )
+# -------- SUMMARY PRINT --------
+print("Scan finished at", datetime.now(timezone.utc).isoformat())
 
-    # optional: print summary
-    print("Scan finished at", datetime.now(timezone.utc).isoformat()
-         )
-    for r in results:
-        print(r)
+for r in results:
+    print(r)
+
 
 if __name__ == "__main__":
     try:
