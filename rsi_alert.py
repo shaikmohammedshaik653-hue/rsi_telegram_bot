@@ -146,43 +146,42 @@ def scan_and_alert():
                 f"Target1: {last_close * 1.02:.2f}\n"
                 f"Target2: {last_close * 1.03:.2f}"
             )
-            # ---------- NEAR SIGNAL LOGIC ----------
-near_msg = None
+                # ---- Signal Logic ----
+signal_msg = None
 
-# NEAR BUY → RSI rising & near oversold zone
-if last_rsi >= NEAR_RSI_LOW and last_rsi <= NEAR_RSI_HIGH:
-    near_msg =(
-        "👀 NEAR BUY WATCHLIST\n"
+# BUY: Oversold + Volume spike
+if last_rsi <= RSI_OVERSOLD and vol_spike:
+    signal_msg = (
+        "🟢 BUY SIGNAL\n"
         f"Symbol: {sym}\n"
         f"Date: {getattr(time_idx, 'date', lambda: time_idx)()}\n"
         f"Close: {last_close:.2f}\n"
-        f"RSI: {last_rsi:.1f} (Rising Zone)\n"
-        f"Volume Avg Check OK\n\n"
-        "Note: BUY signal possible soon, keep watching 🔎"
+        f"RSI: {last_rsi:.1f} (Oversold)\n"
+        f"Volume: {last_vol:.0f} (>{VOL_MULTIPLIER}x avg)\n\n"
+        f"Buy Above: {last_close:.2f}\n"
+        f"Stoploss: {last_close * 0.98:.2f}\n"
+        f"Target 1: {last_close * 1.02:.2f}\n"
+        f"Target 2: {last_close * 1.03:.2f}"
     )
 
-if near_msg:
-    send_telegram(near_msg)
-    print("Near signal sent:",sym)
-if near_msg:
-    send_telegram(near_msg)
-    print("Near signal sent:",sym)
-        # SELL: overbought + volume spike
-        elif last_rsi >= RSI_OVERBOUGHT and vol_spike:
-            signal_msg = (
-                "🔴 SELL SIGNAL\n"
-                f"Symbol: {sym}\n"
-                f"Date: {safe_date_str(last_label)}\n"
-                f"Close: {last_close:.2f}\n"
-                f"RSI: {last_rsi:.1f} (Overbought)\n"
-                f"Volume: {int(last_vol_f)} (>{VOL_MULTIPLIER}x avg)\n\n"
-                f"Sell Below: {last_close:.2f}\n"
-                f"Stoploss: {last_close * 1.02:.2f}\n"
-                f"Target1: {last_close * 0.98:.2f}\n"
-                f"Target2: {last_close * 0.97:.2f}"
+# SELL: Overbought + Volume spike
+elif last_rsi >= RSI_OVERBOUGHT and vol_spike:
+    signal_msg = (
+        "🔴 SELL SIGNAL\n"
+        f"Symbol: {sym}\n"
+        f"Date: {getattr(time_idx, 'date', lambda: time_idx)()}\n"
+        f"Close: {last_close:.2f}\n"
+        f"RSI: {last_rsi:.1f} (Overbought)\n"
+        f"Volume: {last_vol:.0f} (>{VOL_MULTIPLIER}x avg)\n\n"
+        f"Sell Below: {last_close:.2f}\n"
+        f"Stoploss: {last_close * 1.02:.2f}\n"
+        f"Target 1: {last_close * 0.98:.2f}\n"
+        f"Target 2: {last_close * 0.97:.2f}"
     )
 
-        if signal_msg:
+# SEND TELEGRAM
+if signal_msg:
+    send_telegram(signal_msg)   if signal_msg:
             print("Prepared message:", signal_msg.replace("\n", " | "))
             send_telegram(signal_msg)
             print("Alert sent for", sym)
