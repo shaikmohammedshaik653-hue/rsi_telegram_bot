@@ -18,6 +18,8 @@ VOL_LOOKBACK = 20
 VOL_MULTIPLIER = 2.0
 RSI_OVERSOLD = 30
 RSI_OVERBOUGHT = 70
+NEAR_RSI_LOW = 32
+NEAR_RSI_HIGH = 40
 PERIOD = "2y"
 INTERVAL = "1d"
 
@@ -144,6 +146,23 @@ def scan_and_alert():
                 f"Target1: {last_close * 1.02:.2f}\n"
                 f"Target2: {last_close * 1.03:.2f}"
             )
+            # ---------- NEAR SIGNAL LOGIC ----------
+near_msg = None
+
+# NEAR BUY → RSI near oversold zone
+if last_rsi >= NEAR_RSI_LOW and last_rsi <= NEAR_RSI_HIGH:
+    near_msg = (
+        "👀 NEAR BUY WATCHLIST\n"
+        f"Symbol: {sym}\n"
+        f"Date: {getattr(time_idx, 'date', lambda: time_idx)()}\n"
+        f"Close: {last_close:.2f}\n"
+        f"RSI: {last_rsi:.1f} (Rising Zone)\n"
+        "Note: BUY signal possible soon, keep watching 🔎"
+    )
+
+if near_msg:
+    send_telegram(near_msg)
+    print("Near signal sent:", sym)
         # SELL: overbought + volume spike
         elif last_rsi >= RSI_OVERBOUGHT and vol_spike:
             signal_msg = (
