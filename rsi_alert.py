@@ -74,7 +74,19 @@ def scan_and_alert():
         # Compute RSI and volume average
         df["RSI"] = rsi(df["Close"])
         df["vol_avg"] = df["Volume"].rolling(VOL_LOOKBACK).mean()
+valid_rsi = df["RSI"].dropna()
+        if valid_rsi.empty:
+            print("RSI all NaN for", sym)
+            continue
 
+        last_idx = valid_rsi.index[-1]
+
+        last_rsi   = float(df.loc[last_idx, "RSI"])
+        last_close = float(df.loc[last_idx, "Close"])
+        last_vol   = float(df.loc[last_idx, "Volume"])
+        vol_avg    = float(df.loc[last_idx, "vol_avg"])
+
+        vol_spike = last_vol > VOL_MULTIPLIER * vol_avg
         # Ensure at least one valid RSI
         valid_rsi = df["RSI"].dropna()
         if valid_rsi.empty:
