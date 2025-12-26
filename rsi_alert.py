@@ -181,7 +181,8 @@ elif last_rsi >= RSI_OVERBOUGHT and vol_spike:
 
 # SEND TELEGRAM
 if signal_msg:
-    send_telegram(signal_msg)   if signal_msg:
+    send_telegram(signal_msg)   
+if signal_msg:
             print("Prepared message:", signal_msg.replace("\n", " | "))
             send_telegram(signal_msg)
             print("Alert sent for", sym)
