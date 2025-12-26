@@ -190,7 +190,8 @@ else:print(f"No alert for {sym} (RSI={last_rsi:.1f}, spike={vol_spike})"
           )
 
     # optional: print summary
-    print("Scan finished at", datetime.now(timezone.utc).isoformat())
+    print("Scan finished at", datetime.now(timezone.utc).isoformat()
+         )
     for r in results:
         print(r)
 
