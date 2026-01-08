@@ -217,27 +217,9 @@ def scan_and_alert():
             continue
         last_idx = valid_idx[-1]
 
-        # last scalars
-try:
-    last_rsi   = float(df.at[last_idx, "RSI"])
-    last_close = float(df.at[last_idx, "Close"])
-    last_vol   = float(df.at[last_idx, "Volume"])
-    vol_avg    = float(df.at[last_idx, "VOL_AVG"])
-    last_macd  = float(df.at[last_idx, "MACD"])
-    last_sig   = float(df.at[last_idx, "MACD_SIGNAL"])
-    st_dir     = int(df.at[last_idx, "ST_dir"])
-    st_line    = float(df.at[last_idx, "ST_line"])
-except Exception as e:
-    print("Data scalar error for", sym, e)
-    continue
-        except Exception as e:
-            print("Data scalar error for", sym, e)
-            continue
-
-        # volume spike
-        vol_spike = False
-        if not np.isnan(last_vol) and not np.isnan(vol_avg) and vol_avg > 0:
-            vol_spike = last_vol > (VOL_MULTIPLIER * vol_avg)
+        last_rsi = float(df.at[last_idx, "RSI"])
+last_close = float(df.at[last_idx, "Close"])
+last_vol = float(df.at[last_idx, "Volume"])
 
         # store result
         results.append((sym, last_idx, last_close, last_rsi, last_vol, vol_avg))
