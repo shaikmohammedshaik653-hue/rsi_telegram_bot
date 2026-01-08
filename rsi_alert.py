@@ -218,8 +218,7 @@ def scan_and_alert():
         last_idx = valid_idx[-1]
 
         # last scalars
-        try:
-         try:
+try:
     last_rsi   = float(df.at[last_idx, "RSI"])
     last_close = float(df.at[last_idx, "Close"])
     last_vol   = float(df.at[last_idx, "Volume"])
