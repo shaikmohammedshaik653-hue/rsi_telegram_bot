@@ -216,13 +216,12 @@ def scan_and_alert():
             print("RSI empty for", sym)
             continue
         last_idx = valid_idx[-1]
-
-        last_rsi = float(df.at[last_idx, "RSI"])
+ last_rsi = float(df.at[last_idx, "RSI"])
 last_close = float(df.at[last_idx, "Close"])
 last_vol = float(df.at[last_idx, "Volume"])
 
         # store result
-        results.append((sym, last_idx, last_close, last_rsi, last_vol, vol_avg))
+        results.append((sym, last_idx, last_close, last_rsi, last_vol, vol_avg"])
 
         # --- MARKET FILTER ---
         # If Nifty uptrend: allow only BUY conditions
