@@ -219,14 +219,18 @@ def scan_and_alert():
 
         # last scalars
         try:
-            last_rsi = float(df.at[last_idx, "RSI"])
-            last_close = float(df.at[last_idx, "Close"])
-            last_vol = float(df.at[last_idx, "Volume"])
-            vol_avg = float(df.at[last_idx, "VOL_AVG"))
-            macd_val = float(df.at[last_idx, "MACD"))
-            macd_sig = float(df.at[last_idx, "MACD_SIGNAL"))
-            st_dir = int(df.at[last_idx, "ST_dir"))
-            st_line = float(df.at[last_idx, "ST_line"))
+         try:
+    last_rsi   = float(df.at[last_idx, "RSI"])
+    last_close = float(df.at[last_idx, "Close"])
+    last_vol   = float(df.at[last_idx, "Volume"])
+    vol_avg    = float(df.at[last_idx, "VOL_AVG"])
+    last_macd  = float(df.at[last_idx, "MACD"])
+    last_sig   = float(df.at[last_idx, "MACD_SIGNAL"])
+    st_dir     = int(df.at[last_idx, "ST_dir"])
+    st_line    = float(df.at[last_idx, "ST_line"])
+except Exception as e:
+    print("Data scalar error for", sym, e)
+    continue
         except Exception as e:
             print("Data scalar error for", sym, e)
             continue
