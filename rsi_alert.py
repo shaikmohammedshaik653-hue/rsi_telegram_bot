@@ -221,7 +221,7 @@ def scan_and_alert():
         try:
             last_rsi = float(df.at[last_idx, "RSI"])
             last_close = float(df.at[last_idx, "Close"])
-            last_vol = float(df.at[last_idx, "Volume"))
+            last_vol = float(df.at[last_idx, "Volume"])
             vol_avg = float(df.at[last_idx, "VOL_AVG"))
             macd_val = float(df.at[last_idx, "MACD"))
             macd_sig = float(df.at[last_idx, "MACD_SIGNAL"))
