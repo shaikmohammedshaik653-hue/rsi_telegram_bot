@@ -1,4 +1,4 @@
-rsi_v = float(last["RSI"])
+ = float(last["RSI"])
             macd_v = float(last["MACD"])
             macd_s = float(last["MACD_SIGNAL"])
             st_up = bool(last["ST"])
