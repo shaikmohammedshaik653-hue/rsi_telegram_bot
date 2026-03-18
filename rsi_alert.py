@@ -1,45 +1,40 @@
-= float(last["RSI"])
-            macd_v = float(last["MACD"])
-            macd_s = float(last["MACD_SIGNAL"])
-            st_up = bool(last["ST"])
-            vol_ok = last["Volume"] > last["VOL_AVG"]
+import os
+import yfinance as yf
+import pandas as pd
+import requests
 
-            # ================== SIGNALS ==================
-            signal = None
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
 
-            if st_up and rsi_v < 40 and macd_v > macd_s and vol_ok:
-                signal = f"""🟢 STRONG BUY
-{sym}
-Price: {price:.2f}
-RSI: {rsi_v:.1f}
-Trend: Supertrend Bullish
-MACD: Bullish
-Volume: High"""
+WATCH_LIST = ["IRCON.NS","NBCC.NS","SJVN.NS"]
 
-            elif st_up and rsi_v < 40:
-                signal = f"""🟡 WEAK BUY (Watch)
-{sym}
-Price: {price:.2f}
-RSI: {rsi_v:.1f}
-Trend: Bullish
-Waiting confirmation"""
+def send_telegram(msg):
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    requests.post(url, json={"chat_id": CHAT_ID, "text": msg})
 
-            elif (not st_up) and macd_v < macd_s:
-                signal = f"""🔴 SELL / EXIT
-{sym}
-Price: {price:.2f}
-RSI: {rsi_v:.1f}
-Trend: Bearish"""
+def rsi(data, period=14):
+    delta = data.diff()
+    gain = delta.clip(lower=0)
+    loss = -delta.clip(upper=0)
+    avg_gain = gain.rolling(period).mean()
+    avg_loss = loss.rolling(period).mean()
+    rs = avg_gain / avg_loss
+    return 100 - (100 / (1 + rs))
 
-            if signal:
-                print(signal)
-                send_telegram(signal)
+def run():
+    for stock in WATCH_LIST:
+        df = yf.download(stock, period="1mo", interval="1d", progress=False)
+        df["RSI"] = rsi(df["Close"])
 
-        except Exception as e:
-            print(f"Error in {sym}:", e)
+        last = df.iloc[-1]
 
-    print("Scan finished")
+        price = float(last["Close"])
+        rsi_val = float(last["RSI"])
 
-# ================== RUN ==================
+        if rsi_val < 60:
+            msg = f"{stock} BUY | Price: {price:.2f} | RSI: {rsi_val:.1f}"
+            print(msg)
+            send_telegram(msg)
+
 if __name__ == "__main__":
-    scan()
+    run()
